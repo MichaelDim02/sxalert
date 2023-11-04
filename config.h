@@ -4,7 +4,7 @@
 
 /* default appearance */
 
-static char text_color[7]	= "A0A0A0";
+static char text_color[7]	= "FFBFBF";
 static char bg_color[7]		= "300000";
 static char border_color[7]	= "530000";
 

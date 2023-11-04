@@ -44,14 +44,25 @@ hex2int(char *str)
 	return num;
 }
 
+static char *
+convert_text_color_code(void)
+/* adds a '#' before the color hex, as XftColorAllocName requires it */
+{
+	char* text_color_pnd = (char*)malloc(8);
+	strncpy(text_color_pnd+1, text_color, 6);
+	text_color_pnd[0] = '#';
+	return text_color_pnd;
+}
+
 static void
 draw(int border, char **lines, int linecount, int linestart)
 {
-	//const char *fontname = "DejaVu Sans Mono:size=12:antialias=true";
+	char text_color_pnd[8];
+	strncpy(text_color_pnd, convert_text_color_code(), 8);
 
 	Display *dpy = XOpenDisplay(NULL);
 	if (!dpy)
-		die("cannot open X11 display\n", EXIT_FAILURE);
+		die("Cannot open X11 display\n", EXIT_FAILURE);
 	int scr = DefaultScreen(dpy);
 	Visual *visual = DefaultVisual(dpy, scr);
 	Colormap cmap = DefaultColormap(dpy, scr);
@@ -60,17 +71,12 @@ draw(int border, char **lines, int linecount, int linestart)
 	XGlyphInfo extents;
 	XftFont *font = XftFontOpenName(dpy, scr, fontname);
 	if (!font)
-		die("cannot load font\n", EXIT_FAILURE);
-	if (!XftColorAllocName(dpy, visual, cmap, "#ffffff", &color))
-	//if (!XftColorAllocName(dpy, visual, cmap, "#0dff00", &color))
-		die("cannot allocate xft color\n", EXIT_FAILURE);
+		die("Cannot load font\n", EXIT_FAILURE);
+	if (!XftColorAllocName(dpy, visual, cmap, text_color_pnd, &color))
+		die("Cannot allocate Xft color\n", EXIT_FAILURE);
 	XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
-    	int text_height = extents.height;
-    	int text_width = extents.width; /* for some reason this is always 61 */
-	printf("text_width: %d\n", text_width);
-
+    	int text_height = extents.height; /* int text_width = extents.width; for some reason this is always 61 */
 	int height = (linecount - linestart) * (text_height * 2) + text_height;
-	printf("height:%d\n", (linecount-linestart));
 
 	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, 400, height, border, hex2int(border_color), hex2int(bg_color));
 	/* make window fixed */
@@ -113,8 +119,6 @@ main(int argc, char **argv)
 	char text[BUFFER];
 	extern char *optarg;
 
-	printf("text_color: %s\n", text_color);
-
 	while ((c = getopt(argc, argv, "s:b:vh")) != -1 ) {
 		switch (c) {
 		case 'v':
@@ -130,14 +134,6 @@ main(int argc, char **argv)
 			break;
 		}
 	}
-
-	/* can be removed */
-	/*printf("b=%d\n", border_width);
-	if (optind < argc) {
-		printf("argc=%d\n", argc);
-		printf("optind=%d\n", optind);
-		printf("optind=%s\n", argv[optind]);
-	}*/
 
 	draw(border_width, argv, argc, optind);
 
