@@ -1,4 +1,4 @@
-/* simpleXalert v0.1
+/* Simple X Alert v0.1
  * Simple notification program for X
  * GNU GPL v3.0
  *
@@ -40,9 +40,12 @@ help(void) /* TODO: update */
 {
 	printf("sXalert %s\n", VERSION);
 	printf("Alert utility for X\n\n");
-	printf("	-c color in hex:hex:hex format\n");
-	printf("	-s time in seconds\n");
+	printf("	-t text hex color (eg FFFFFF)\n");
+	printf("	-g background hex color\n");
+	printf("	-r border hex color\n");
 	printf("	-b border width in pixels\n");
+	printf("	-d duration in milliseconds\n");
+	printf("	-v print version & exit\n\n");
 	printf("	-h print help panel & exit\n\n");
 }
 
@@ -65,7 +68,7 @@ convert_text_color_code(void)
 }
 
 static void
-draw(int border, char **lines, int linecount, int linestart)
+draw(int border, char **lines, int linecount, int linestart, int duration)
 {
 	char text_color_pnd[8];
 	strncpy(text_color_pnd, convert_text_color_code(), 8);
@@ -141,15 +144,15 @@ main(int argc, char **argv)
 	char text[BUFFER];
 	extern char *optarg;
 
-	while ((c = getopt(argc, argv, "s:b:t:g:r:vh")) != -1 ) {
+	while ((c = getopt(argc, argv, "d:b:t:g:r:vh")) != -1 ) {
 		switch (c) {
 		case 'v':
 			die(VERSION, EXIT_SUCCESS);
 		case 'h':
 			help();
 			usage(argv[0]);
-		case 's':
-			s=atoi(optarg);
+		case 'd':
+			duration=atoi(optarg);
 			break;
 		case 'b':
 			border_width=atoi(optarg); /* overwrite default in config.h */
@@ -166,7 +169,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	draw(border_width, argv, argc, optind);
+	draw(border_width, argv, argc, optind, duration);
 
 	return 0;
 }

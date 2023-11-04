@@ -1,4 +1,9 @@
-/* simpleXalert Configuration */
+/* Simple X Alert v0.1
+ * Simple notification program for X
+ * GNU GPL v3.0
+ *
+ * config.h - configuration file
+ */
 
 #define BUFFER 2054
 
