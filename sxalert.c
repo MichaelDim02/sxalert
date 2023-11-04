@@ -1,15 +1,25 @@
+/* simpleXalert v0.1
+ * Simple notification program for X
+ * GNU GPL v3.0
+ *
+ * sxalert.c - main program
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <getopt.h>
+#include <time.h>
+#include <poll.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xft/Xft.h>
 
-#define VERSION "v0.1"
-
 #include "config.h"
+
+#define VERSION "v0.1"
 
 static void
 die(const char *msg, int code)
@@ -90,18 +100,29 @@ draw(int border, char **lines, int linecount, int linestart)
 
 	XftDraw *draw = XftDrawCreate(dpy, win, visual, cmap);
 
-	while(1) { /* TODO: add timer & click to exit functionality */
-		XEvent ev;
+	while (1) {
+    		struct pollfd pfd = {
+        		.fd = ConnectionNumber(dpy),
+        		.events = POLLIN,
+    		};
+		Bool pending = XPending(dpy) > 0 || poll(&pfd, 1, duration) > 0;
 
-		XNextEvent(dpy, &ev);
-		if (ev.type == Expose) {
-			int spacing = text_height * 2;
-			for (int i=linestart; i<linecount; i++) {
-				XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
-				spacing += text_height * 2;
-			}
-		} else if (ev.type == KeyPress) {
+		if (!pending)
 			break;
+
+		XEvent ev;
+		
+		XNextEvent(dpy, &ev);
+		
+		if (ev.type == Expose) {
+		    	int spacing = text_height * 2;
+		    	for (int i = linestart; i < linecount; i++) {
+		    		XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
+		    		spacing += text_height * 2;
+			}
+		} else if (ev.type == ButtonPress) { //&& ev.xbutton.button == 1) {
+			printf("Event: mouse xbutton.butotn = 1\n LEFT CLICK\n");
+	        	break; // Exit the loop if a key is pressed
 		}
 	}
 
