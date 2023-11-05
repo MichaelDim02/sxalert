@@ -18,7 +18,8 @@ static char border_color[7]	= "e1ba9b";
 static int border_width	= 1;
 static int text_x_padding = 10;
 
-static int min_width = 400;
-static int max_width = 600;
+static int min_width = 300; 
+static int max_width = 1100;
 
 const char *fontname = "DejaVu Sans Mono:size=12:antialias=true";
+static int text_height = 10;

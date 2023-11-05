@@ -7,6 +7,7 @@ Simple notification system for X that works without a daemon. This is mainly for
 + Freetype scalable fonts
 + UTF-8 support
 + Configurable & scriptable
++ Dynamic box sizing
 
 ## Dependencies
 To build simple X alert, you'll need Xlib and Xft.
@@ -31,7 +32,6 @@ These will overwrite the defaults written in `config.h`
 
 ## TODOs:
 + Dynamic screen positioning
-+ Width based on text
 + Exit by event (perhaps as a path)
 + Titles (perhaps as a patch)
 + (?) optional daemon for positinioning

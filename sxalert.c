@@ -82,14 +82,14 @@ get_max(int arr[], int len)
 static int
 get_width(Display *dpy, XftFont *font, char **lines, int length)
 {
-	XGlyphInfo extents;
+	XGlyphInfo ext;
 	int width = 0;
 	if (length > 0) {
 		int width_lines[length];
 		int j = 0;
 		for (int i = 0; i < length; i++) {
-			XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[i], strlen(lines[i]), &extents);
-    			width_lines[i] = extents.xOff;
+			XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[i], strlen(lines[i]), &ext);
+    			width_lines[i] = ext.xOff;
 			j++;
 		}
 
@@ -104,7 +104,6 @@ get_width(Display *dpy, XftFont *font, char **lines, int length)
 	else
 		return width;
 }
-
 
 static void
 write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_height, char **lines, int length)
@@ -159,18 +158,19 @@ draw(int border, int duration, char **lines, int length)
 	
 	int width = get_width(dpy, font, lines, length);
 
-	int text_height, height;
-	if (length > 0) {
-		XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
-    		text_height = extents.height;
-		height = length * (text_height * 2) + text_height;
-	} else {
-		int text_height = text_x_padding;
-		height = text_height;
-	}
+	int height = length * (text_height * 2) + text_height;
+	//if (length > 0) {
+	//	XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
+    	//	text_height = extents.height;
+	//	height = length * (text_height * 2) + text_height;
+	//} else {
+	//	text_height = text_x_padding;
+	//	height = text_height;
+	//}
+	//printf("text_height: %d\n", text_height);
 
 	/* TODO: calculate position dynamically */
-	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, width, height, border, hex2int(border_color), hex2int(bg_color));
+	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500-(width-400), 50, width, height, border, hex2int(border_color), hex2int(bg_color));
 	XSetWindowAttributes attributes;
 	attributes.override_redirect = True;
 	XChangeWindowAttributes(dpy, win, CWOverrideRedirect, &attributes);
