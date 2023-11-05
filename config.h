@@ -21,6 +21,4 @@ static int text_x_padding = 10;
 static int min_width = 400;
 static int max_width = 600;
 
-static int line_spacing = 2; /* factor in relation to text height */
-
 const char *fontname = "DejaVu Sans Mono:size=12:antialias=true";
