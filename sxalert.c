@@ -36,7 +36,7 @@ usage(const char *bin)
 }
 
 static void
-help(void) /* TODO: update */
+help(void)
 {
 	printf("sXalert %s\n", VERSION);
 	printf("Alert utility for X\n\n");
@@ -79,75 +79,34 @@ get_max(int arr[], int len)
 	return max;
 }
 
-static void
-draw(int border, int duration, char **lines, int length)
+static int
+get_width(Display *dpy, XftFont *font, char **lines, int length)
 {
-	char text_color_pnd[8];
-	strncpy(text_color_pnd, convert_text_color_code(), 8);
-
-	Display *dpy = XOpenDisplay(NULL);
-	if (!dpy)
-		die("Cannot open X11 display\n", EXIT_FAILURE);
-	int scr = DefaultScreen(dpy);
-	Visual *visual = DefaultVisual(dpy, scr);
-	Colormap cmap = DefaultColormap(dpy, scr);
-
-	XftColor color;
 	XGlyphInfo extents;
-	XftFont *font = XftFontOpenName(dpy, scr, fontname);
-	if (!font)
-		die("Cannot load font\n", EXIT_FAILURE);
-	if (!XftColorAllocName(dpy, visual, cmap, text_color_pnd, &color))
-		die("Cannot allocate Xft color\n", EXIT_FAILURE);
-	
-	printf("ok\n");
-	int width;
+	int width = 0;
 	if (length > 0) {
 		int width_lines[length];
 		int j = 0;
 		for (int i = 0; i < length; i++) {
 			XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[i], strlen(lines[i]), &extents);
     			width_lines[i] = extents.xOff;
-			printf("text_width[%d]=%d\n", j, width_lines[j]);
 			j++;
 		}
 
 		int text_width = get_max(width_lines, length);
-		printf("text_width=%d\n", text_width);
 		width = (text_x_padding * 2) + text_width;
-	} else {
-		width = 0;
 	}
-	printf("ok\n");
+
 	if (width < min_width)
-		width = min_width;
+		return min_width;
 	if (width > max_width)
-		width = max_width;
+		return max_width;
+}
 
-	printf("susok\n");
-	int text_height, height;
-	if (length > 0) {
-		XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
-		printf("susok2\n");
-    		text_height = extents.height;
-		height = length * (text_height * 2) + text_height;
-	} else {
-		int text_height = text_x_padding;
-		height = text_height;
-	}
 
-	/* TODO: calculate position dynamically */
-	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, width, height, border, hex2int(border_color), hex2int(bg_color));
-	/* make window fixed */
-	XSetWindowAttributes attributes;
-	attributes.override_redirect = True;
-	XChangeWindowAttributes(dpy, win, CWOverrideRedirect, &attributes);
-
-	XSelectInput(dpy, win, ExposureMask | KeyPressMask);
-	XMapWindow(dpy, win);
-
-	XftDraw *draw = XftDrawCreate(dpy, win, visual, cmap);
-
+static void
+write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_height, char **lines, int length)
+{
 	while (1) {
     		struct pollfd pfd = {
         		.fd = ConnectionNumber(dpy),
@@ -169,11 +128,56 @@ draw(int border, int duration, char **lines, int length)
 		    			XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
 		    		spacing += text_height * 2;
 			}
-		} else if (ev.type == ButtonPress) { //&& ev.xbutton.button == 1) {
-			printf("Event: mouse xbutton.butotn = 1\n LEFT CLICK\n");
-	        	break; // Exit the loop if a key is pressed
+		} else if (ev.type == ButtonPress) { /*&& ev.xbutton.button == 1) { */
+	        	break;
 		}
 	}
+}
+
+static void
+draw(int border, int duration, char **lines, int length)
+{
+	char text_color_pnd[8];
+	strncpy(text_color_pnd, convert_text_color_code(), 8);
+
+	Display *dpy = XOpenDisplay(NULL);
+	if (!dpy)
+		die("Cannot open X11 display\n", EXIT_FAILURE);
+	int scr = DefaultScreen(dpy);
+	Visual *visual = DefaultVisual(dpy, scr);
+	Colormap cmap = DefaultColormap(dpy, scr);
+
+	XftColor color;
+	XGlyphInfo extents;
+	XftFont *font = XftFontOpenName(dpy, scr, fontname);
+	if (!font)
+		die("Cannot load font\n", EXIT_FAILURE);
+	if (!XftColorAllocName(dpy, visual, cmap, text_color_pnd, &color))
+		die("Cannot allocate Xft color\n", EXIT_FAILURE);
+	
+	int width = get_width(dpy, font, lines, length);
+
+	int text_height, height;
+	if (length > 0) {
+		XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
+    		text_height = extents.height;
+		height = length * (text_height * 2) + text_height;
+	} else {
+		int text_height = text_x_padding;
+		height = text_height;
+	}
+
+	/* TODO: calculate position dynamically */
+	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, width, height, border, hex2int(border_color), hex2int(bg_color));
+	XSetWindowAttributes attributes;
+	attributes.override_redirect = True;
+	XChangeWindowAttributes(dpy, win, CWOverrideRedirect, &attributes);
+	XSelectInput(dpy, win, ExposureMask | KeyPressMask);
+	XMapWindow(dpy, win);
+
+	XftDraw *draw = XftDrawCreate(dpy, win, visual, cmap);
+
+	write_text(dpy, draw, color, font, text_height, lines, length);
 
 	/* cleanup */
 	XftColorFree(dpy, visual, cmap, &color);
@@ -217,7 +221,6 @@ main(int argc, char **argv)
 
 	int lines_len=argc-optind;
 	char** lines = argv + optind; /* get lines to print */
-	printf("ok\n");
 
 	draw(border_width, duration, lines, lines_len);
 
