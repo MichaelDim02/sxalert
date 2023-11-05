@@ -7,6 +7,7 @@ Simple notification system for X that works without a daemon. This is mainly for
 + Freetype scalable fonts
 + UTF-8 support
 + Configurable & scriptable
++ Dynamic screen positioning
 + Dynamic box sizing
 
 ## Dependencies
@@ -31,8 +32,7 @@ $ ./sxalert -b 5 -t FFFFFF -g 000000 -r FFFFFF "First line" "Second line"
 These will overwrite the defaults written in `config.h`
 
 ## TODOs:
-+ Dynamic screen positioning
-+ Exit by event (perhaps as a path)
++ Exit by event (perhaps as a patch)
 + Titles (perhaps as a patch)
 + (?) optional daemon for positinioning
 

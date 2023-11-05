@@ -159,18 +159,16 @@ draw(int border, int duration, char **lines, int length)
 	int width = get_width(dpy, font, lines, length);
 
 	int height = length * (text_height * 2) + text_height;
-	//if (length > 0) {
-	//	XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
-    	//	text_height = extents.height;
-	//	height = length * (text_height * 2) + text_height;
-	//} else {
-	//	text_height = text_x_padding;
-	//	height = text_height;
-	//}
-	//printf("text_height: %d\n", text_height);
+
+	int count_screens = ScreenCount(dpy);
+        Screen *screen = ScreenOfDisplay(dpy, 0);
+
+	printf("Screen %d: %dX%d\n", 0, screen->width, screen->height);
+	int x = screen->width - width - x_offset; // - (width - 400);
+	printf("x: %d\n", x);
 
 	/* TODO: calculate position dynamically */
-	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500-(width-400), 50, width, height, border, hex2int(border_color), hex2int(bg_color));
+	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), x, y_offset, width, height, border, hex2int(border_color), hex2int(bg_color));
 	XSetWindowAttributes attributes;
 	attributes.override_redirect = True;
 	XChangeWindowAttributes(dpy, win, CWOverrideRedirect, &attributes);

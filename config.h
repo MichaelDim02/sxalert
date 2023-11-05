@@ -21,5 +21,8 @@ static int text_x_padding = 10;
 static int min_width = 300; 
 static int max_width = 1100;
 
+static int x_offset = 20; /* pixels from right */
+static int y_offset = 50; /* pixels from top */
+
 const char *fontname = "DejaVu Sans Mono:size=12:antialias=true";
 static int text_height = 10;
