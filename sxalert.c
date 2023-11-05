@@ -67,8 +67,20 @@ convert_text_color_code(void)
 	return text_color_pnd;
 }
 
+int
+get_max(int arr[], int len)
+{
+	int max = -1;
+	for (int i=0; i<len; i++) {
+		if (arr[i] > max)
+			max = arr[i];
+	}
+
+	return max;
+}
+
 static void
-draw(int border, char **lines, int linecount, int linestart, int duration)
+draw(int border, int duration, char **lines, int length)
 {
 	char text_color_pnd[8];
 	strncpy(text_color_pnd, convert_text_color_code(), 8);
@@ -87,12 +99,30 @@ draw(int border, char **lines, int linecount, int linestart, int duration)
 		die("Cannot load font\n", EXIT_FAILURE);
 	if (!XftColorAllocName(dpy, visual, cmap, text_color_pnd, &color))
 		die("Cannot allocate Xft color\n", EXIT_FAILURE);
+	
+	int width_lines[length];
+	int j = 0;
+	for (int i = 0; i < length; i++) {
+		XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[i], strlen(lines[i]), &extents);
+    		width_lines[i] = extents.xOff;
+		printf("text_width[%d]=%d\n", j, width_lines[j]);
+		j++;
+	}
+
+	int text_width = get_max(width_lines, length);
+	printf("text_width=%d\n", text_width);
+	int width = (text_x_padding * 2) + text_width;
+	if (width < min_width)
+		width = min_width;
+	if (width > max_width)
+		width = max_width;
+
 	XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[0], strlen(lines[0]), &extents);
-    	int text_height = extents.height; /* TODO: int text_width = extents.width; for some reason this is always 61 */
-	int height = (linecount - linestart) * (text_height * 2) + text_height;
+    	int text_height = extents.height;
+	int height = length * (text_height * 2) + text_height;
 
 	/* TODO: calculate position dynamically */
-	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, 400, height, border, hex2int(border_color), hex2int(bg_color));
+	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), 1500, 50, width, height, border, hex2int(border_color), hex2int(bg_color));
 	/* make window fixed */
 	XSetWindowAttributes attributes;
 	attributes.override_redirect = True;
@@ -119,7 +149,7 @@ draw(int border, char **lines, int linecount, int linestart, int duration)
 		
 		if (ev.type == Expose) {
 		    	int spacing = text_height * 2;
-		    	for (int i = linestart; i < linecount; i++) {
+		    	for (int i = 0; i < length; i++) {
 		    		XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
 		    		spacing += text_height * 2;
 			}
@@ -169,7 +199,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	draw(border_width, argv, argc, optind, duration);
+	int lines_len=argc-optind;
+	char** lines = argv + optind; /* get lines to print */
+
+	draw(border_width, duration, lines, lines_len);
 
 	return 0;
 }

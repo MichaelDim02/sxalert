@@ -7,7 +7,7 @@
 
 #define BUFFER 2054
 
-static int duration = 4000; /* in milliseconds */
+static int duration = 5000; /* in milliseconds */
 
 /* default appearance */
 
@@ -17,5 +17,10 @@ static char border_color[7]	= "e1ba9b";
 
 static int border_width	= 1;
 static int text_x_padding = 10;
+
+static int min_width = 400;
+static int max_width = 600;
+
+static int line_spacing = 2; /* factor in relation to text height */
 
 const char *fontname = "DejaVu Sans Mono:size=12:antialias=true";
