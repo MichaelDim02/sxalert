@@ -99,8 +99,10 @@ get_width(Display *dpy, XftFont *font, char **lines, int length)
 
 	if (width < min_width)
 		return min_width;
-	if (width > max_width)
+	else if (width > max_width)
 		return max_width;
+	else
+		return width;
 }
 
 
