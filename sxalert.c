@@ -12,9 +12,6 @@
 #include <getopt.h>
 #include <time.h>
 #include <poll.h>
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <X11/Xft/Xft.h>
 
 #include "config.h"
@@ -29,17 +26,9 @@ die(const char *msg, int code)
 }
 
 static void
-usage(const char *bin)
+help(char *bin)
 {
-	printf("Usage: %s [arguments] \"title\" \"text\" \"text\"\n", bin);
-	exit(0);
-}
-
-static void
-help(void)
-{
-	printf("sXalert %s\n", VERSION);
-	printf("Alert utility for X\n\n");
+	printf("sxalert %s - Alert utility for X\n\n", VERSION);
 	printf("	-t text hex color (eg FFFFFF)\n");
 	printf("	-g background hex color\n");
 	printf("	-r border hex color\n");
@@ -47,6 +36,8 @@ help(void)
 	printf("	-d duration in milliseconds\n");
 	printf("	-v print version & exit\n\n");
 	printf("	-h print help panel & exit\n\n");
+	printf("Usage: %s [arguments] \"text\" \"text\" \"text\"\n", bin);
+	exit(0);
 }
 
 static int
@@ -58,8 +49,7 @@ hex2int(char *str)
 }
 
 static char *
-convert_text_color_code(void)
-/* adds a '#' before the color hex, as XftColorAllocName requires it */
+convert_text_color_code(void) /* adds a '#' before the color hex, as XftColorAllocName requires it */
 {
 	char* text_color_pnd = (char*)malloc(8);
 	strncpy(text_color_pnd+1, text_color, 6);
@@ -113,7 +103,7 @@ write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_
         		.fd = ConnectionNumber(dpy),
         		.events = POLLIN,
     		};
-		Bool pending = XPending(dpy) > 0 || poll(&pfd, 1, duration) > 0;
+		int pending = XPending(dpy) > 0 || poll(&pfd, 1, duration) > 0;
 
 		if (!pending)
 			break;
@@ -129,8 +119,6 @@ write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_
 		    			XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
 		    		spacing += text_height * 2;
 			}
-		} else if (ev.type == ButtonPress) { /*&& ev.xbutton.button == 1) { */
-	        	break;
 		}
 	}
 }
@@ -157,17 +145,12 @@ draw(int border, int duration, char **lines, int length)
 		die("Cannot allocate Xft color\n", EXIT_FAILURE);
 	
 	int width = get_width(dpy, font, lines, length);
-
 	int height = length * (text_height * 2) + text_height;
 
 	int count_screens = ScreenCount(dpy);
         Screen *screen = ScreenOfDisplay(dpy, 0);
+	int x = screen->width - width - x_offset;
 
-	printf("Screen %d: %dX%d\n", 0, screen->width, screen->height);
-	int x = screen->width - width - x_offset; // - (width - 400);
-	printf("x: %d\n", x);
-
-	/* TODO: calculate position dynamically */
 	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), x, y_offset, width, height, border, hex2int(border_color), hex2int(bg_color));
 	XSetWindowAttributes attributes;
 	attributes.override_redirect = True;
@@ -179,7 +162,6 @@ draw(int border, int duration, char **lines, int length)
 
 	write_text(dpy, draw, color, font, text_height, lines, length);
 
-	/* cleanup */
 	XftColorFree(dpy, visual, cmap, &color);
 	XftDrawDestroy(draw);
 	XDestroyWindow(dpy, win);
@@ -189,8 +171,7 @@ draw(int border, int duration, char **lines, int length)
 int
 main(int argc, char **argv)
 {
-	int s = 3;
-	int c;
+	int c, s = 3;
 	char text[BUFFER];
 	extern char *optarg;
 
@@ -199,13 +180,12 @@ main(int argc, char **argv)
 		case 'v':
 			die(VERSION, EXIT_SUCCESS);
 		case 'h':
-			help();
-			usage(argv[0]);
+			help(argv[0]);
 		case 'd':
 			duration=atoi(optarg);
 			break;
 		case 'b':
-			border_width=atoi(optarg); /* overwrite default in config.h */
+			border_width=atoi(optarg);
 			break;
 		case 't':
 			strncpy(text_color, optarg, 7);
@@ -221,7 +201,6 @@ main(int argc, char **argv)
 
 	int lines_len=argc-optind;
 	char** lines = argv + optind; /* get lines to print */
-
 	draw(border_width, duration, lines, lines_len);
 
 	return 0;
