@@ -1,3 +1,6 @@
+# sxalert Makefile
+# GNU GPL v3.0
+
 CC=c99
 MD=/usr/share/man/man1/
 
