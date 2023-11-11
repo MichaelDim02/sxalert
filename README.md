@@ -37,7 +37,6 @@ These will overwrite the defaults defined in `config.h`
 
 ## TODOs:
 + Read from stdin (perhaps as a patch)
-+ Create a manpage
 + Exit by event (perhaps as a patch)
 
 ## Optional D-Bus daemon hack
