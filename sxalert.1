@@ -1,0 +1,43 @@
+.\" Manpage for sxalert
+
+.TH man 8 "11 Nov 2023" "0.1" "sxalert manual page"
+.SH NAME
+sxalert \- Simple X Alert
+.SH SYNOPSIS
+sxalert [OPTIONS] "First line" "Second line" "Third line"
+.SH DESCRIPTION
+sxalert will draw text as a notification for X
+
+.SH OPTIONS
+
+-t text color in hex
+
+-g background color in hex
+
+-r border color in hex
+
+-b border width in pixels
+
+-d duration in milliseconds
+
+-h print help panel & exit
+
+-v print version & exit
+
+.SH EXAMPLES
+
+This will print the string "Updates available":
+
+sxalert "Updates avalailable"
+
+The following will also print "Updates available" but will specify text color to be red, background to be black and border width to be 0:
+
+sxlaert -t 0xff0000 -g 0x000000 -b 0 "Updates available"
+
+.SH AUTHOR
+Michael Constantine Dimopoulos <mk@mcdim.xyz>
+
+https://mcdim.xyz
+
+.SH LICENSE
+GNU General Public License 3.0 (GPL-3.0)

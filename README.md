@@ -40,5 +40,8 @@ These will overwrite the defaults defined in `config.h`
 + Create a manpage
 + Exit by event (perhaps as a patch)
 
+## Optional D-Bus daemon hack
+I've created a small Shell script called [sxalertd](https://github.com/MichaelDim02/sxalertd) that can run as a daemon to read the D-Bus and use sxalert to draw the notifications. The script & parsing method are a little hacky but work quite well.
+
 ## Credit
 The logo is the Alectryon! The rooster image is by Leys, Thomson W. from the 1883 book "Brett's colonists' guide and cyclopaedia" for New Zealand settlers. The font is Byzantine, and the logo was created in GIMP.
