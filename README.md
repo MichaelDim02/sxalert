@@ -11,7 +11,7 @@ Simple notification system for X that works without a daemon. This is mainly for
 + Dynamic screen positioning & sizing
 
 ## Dependencies
-To build sxalert, you'll need `Xlib` and `Xft`.
+To build sxalert, you'll need a c99 compiler,  `make`, `Xlib` and `Xft`.
 
 ## Build & install
 In order to build, execute the following commands:

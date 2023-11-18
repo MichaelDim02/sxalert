@@ -40,7 +40,7 @@ Features
 
 Dependencies
 ============
-To build sxalert, you'll need Xlib and Xft.
+To build sxalert, you'll need a c99 compiler, make, Xlib and Xft.
 
 Build & install
 ===============
