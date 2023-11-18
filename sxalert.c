@@ -54,6 +54,7 @@ convert_text_color_code(void) /* adds a '#' before the color hex, as XftColorAll
 	char* text_color_pnd = (char*)malloc(8);
 	strncpy(text_color_pnd+1, text_color, 6);
 	text_color_pnd[0] = '#';
+	text_color_pnd[7] = '\0';
 	return text_color_pnd;
 }
 
