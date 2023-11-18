@@ -53,7 +53,6 @@ And to install on /bin:
 
 	$ sudo make install
 
-
 Usage
 =====
 You can simply run the tool with each argument being a line of text
