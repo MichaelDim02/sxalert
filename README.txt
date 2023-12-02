@@ -68,7 +68,7 @@ These will overwrite the defaults defined in `config.h`
 TODOs
 =====
 + Read from stdin (perhaps as a patch)
-+ Exit by event (perhaps as a patch)
++ [DONE] Exit by ButtonPress event
 
 Optional D-Bus daemon hack
 ==========================

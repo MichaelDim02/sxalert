@@ -37,7 +37,7 @@ These will overwrite the defaults defined in `config.h`
 
 ## TODOs:
 + Read from stdin (perhaps as a patch)
-+ Exit by event (perhaps as a patch)
++ <s>Exit by ButtonPress event</s>
 
 ## Optional D-Bus daemon hack
 I've created a small Shell script called [sxalertd](https://github.com/MichaelDim02/sxalertd) that can run as a daemon to read the D-Bus and use sxalert to draw the notifications. The script & parsing method are a little hacky but work quite well.
