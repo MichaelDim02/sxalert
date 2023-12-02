@@ -1,6 +1,6 @@
 /* Simple X Alert v0.1
  * Simple notification program for X
- * GNU GPL v3.0
+ * GNU GPL v3.0+
  *
  * sxalert.c - main program
  */
@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
 #include <getopt.h>
 #include <time.h>
 #include <poll.h>
@@ -97,7 +98,7 @@ get_width(Display *dpy, XftFont *font, char **lines, int length)
 }
 
 static void
-write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_height, char **lines, int length)
+write_text(Display *dpy, Window w, XftDraw *draw, XftColor color, XftFont *font, int text_height, char **lines, int length)
 {
 	while (1) {
     		struct pollfd pfd = {
@@ -110,9 +111,9 @@ write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_
 			break;
 
 		XEvent ev;
-		
+		XSelectInput(dpy, w, ExposureMask | ButtonPressMask);
 		XNextEvent(dpy, &ev);
-		
+
 		if (ev.type == Expose) {
 		    	int spacing = text_height * 2;
 		    	for (int i = 0; i < length; i++) {
@@ -120,6 +121,8 @@ write_text(Display *dpy, XftDraw *draw, XftColor color, XftFont *font, int text_
 		    			XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
 		    		spacing += text_height * 2;
 			}
+		} else if (ev.type == ButtonPress) {
+			return;
 		}
 	}
 }
@@ -161,7 +164,7 @@ draw(int border, int duration, char **lines, int length)
 
 	XftDraw *draw = XftDrawCreate(dpy, win, visual, cmap);
 
-	write_text(dpy, draw, color, font, text_height, lines, length);
+	write_text(dpy, win, draw, color, font, text_height, lines, length);
 
 	XftColorFree(dpy, visual, cmap, &color);
 	XftDrawDestroy(draw);
@@ -201,7 +204,7 @@ main(int argc, char **argv)
 	}
 
 	int lines_len=argc-optind;
-	char** lines = argv + optind; /* get lines to print */
+	char **lines = argv + optind; /* get lines to print */
 	draw(border_width, duration, lines, lines_len);
 
 	return 0;
