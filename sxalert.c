@@ -19,25 +19,26 @@
 
 #define VERSION "v0.1"
 
-static void
+static inline void
 die(const char *msg, int code)
 {
 	fprintf(stderr, "%s\n", msg);
 	exit(code);
 }
 
-static void
+static inline void
 help(char *bin)
 {
-	printf("sxalert %s - Alert utility for X\n\n", VERSION);
-	printf("	-t text hex color (eg FFFFFF)\n");
-	printf("	-g background hex color\n");
-	printf("	-r border hex color\n");
-	printf("	-b border width in pixels\n");
-	printf("	-d duration in milliseconds\n");
-	printf("	-v print version & exit\n\n");
-	printf("	-h print help panel & exit\n\n");
-	printf("Usage: %s [arguments] \"text\" \"text\" \"text\"\n", bin);
+	printf("sxalert %s - Alert utility for X\n\n"
+	       "	-t text hex color (eg FFFFFF)\n"
+	       "	-g background hex color\n"
+	       "	-r border hex color\n"
+	       "	-b border width in pixels\n"
+	       "	-d duration in milliseconds\n\n"
+	       "	-v print version & exit\n"
+	       "	-h print help panel & exit\n\n"
+	       "Usage: %s [arguments] \"text\" \"text\" \"text\"\n",
+	       VERSION, bin);
 	exit(0);
 }
 
@@ -50,10 +51,10 @@ hex2int(char *str)
 }
 
 static char *
-convert_text_color_code(void) /* adds a '#' before the color hex, as XftColorAllocName requires it */
-{
+convert_text_color_code(struct alert *a) /* adds a '#' before the color hex, */
+{                             /* as XftColorAllocName requires it */
 	char* text_color_pnd = (char*)malloc(8);
-	strncpy(text_color_pnd+1, text_color, 6);
+	strncpy(text_color_pnd+1, a->text_color, 6);
 	text_color_pnd[0] = '#';
 	text_color_pnd[7] = '\0';
 	return text_color_pnd;
@@ -72,40 +73,40 @@ get_max(int arr[], int len)
 }
 
 static int
-get_width(Display *dpy, XftFont *font, char **lines, int length)
+get_width(Display *dpy, XftFont *font, struct alert *a)
 {
 	XGlyphInfo ext;
 	int width = 0;
-	if (length > 0) {
-		int width_lines[length];
+	if (a->lines_len > 0) {
+		int width_lines[a->lines_len];
 		int j = 0;
-		for (int i = 0; i < length; i++) {
-			XftTextExtentsUtf8(dpy, font, (XftChar8*)lines[i], strlen(lines[i]), &ext);
+		for (int i = 0; i < a->lines_len; i++) {
+			XftTextExtentsUtf8(dpy, font, (XftChar8*)a->lines[i], strlen(a->lines[i]), &ext);
     			width_lines[i] = ext.xOff;
 			j++;
 		}
 
-		int text_width = get_max(width_lines, length);
-		width = (text_x_padding * 2) + text_width;
+		int text_width = get_max(width_lines, a->lines_len);
+		width = (a->text_x_padding * 2) + text_width;
 	}
 
-	if (width < min_width)
-		return min_width;
-	else if (width > max_width)
-		return max_width;
-	else
-		return width;
+	if (width < a->min_width)
+		return a->min_width;
+	else if (width > a->max_width)
+		return a->max_width;
+	return width;
 }
 
 static void
-write_text(Display *dpy, Window w, XftDraw *draw, XftColor color, XftFont *font, int text_height, char **lines, int length)
+write_text(Display *dpy, Window w, XftDraw *draw, XftColor color,
+	   XftFont *font, struct alert *a)
 {
 	while (1) {
     		struct pollfd pfd = {
         		.fd = ConnectionNumber(dpy),
         		.events = POLLIN,
     		};
-		int pending = XPending(dpy) > 0 || poll(&pfd, 1, duration) > 0;
+		int pending = XPending(dpy) > 0 || poll(&pfd, 1, a->duration) > 0;
 
 		if (!pending)
 			break;
@@ -115,11 +116,11 @@ write_text(Display *dpy, Window w, XftDraw *draw, XftColor color, XftFont *font,
 		XNextEvent(dpy, &ev);
 
 		if (ev.type == Expose) {
-		    	int spacing = text_height * 2;
-		    	for (int i = 0; i < length; i++) {
-				if (length != 0)
-		    			XftDrawStringUtf8(draw, &color, font, text_x_padding, spacing, (XftChar8 *)lines[i], strlen(lines[i]));
-		    		spacing += text_height * 2;
+		    	int spacing = a->text_height * 2;
+		    	for (int i = 0; i < a->lines_len; i++) {
+				if (a->lines_len != 0)
+		    			XftDrawStringUtf8(draw, &color, font, a->text_x_padding, spacing, (XftChar8 *)a->lines[i], strlen(a->lines[i]));
+		    		spacing += a->text_height * 2;
 			}
 		} else if (ev.type == ButtonPress) {
 			return;
@@ -128,56 +129,87 @@ write_text(Display *dpy, Window w, XftDraw *draw, XftColor color, XftFont *font,
 }
 
 static void
-draw(int border, int duration, char **lines, int length)
+init_render(Display *dpy, struct xrender *r, struct alert *a)
 {
 	char text_color_pnd[8];
-	strncpy(text_color_pnd, convert_text_color_code(), 8);
+	strncpy(text_color_pnd, convert_text_color_code(a), 8);
 
+	r->scr = DefaultScreen(dpy);
+	r->visual = DefaultVisual(dpy, r->scr);
+	r->cmap = DefaultColormap(dpy, r->scr);
+
+	r->font = XftFontOpenName(dpy, r->scr, a->font);
+	if (!r->font)
+		die("Cannot load font\n", EXIT_FAILURE);
+	if (!XftColorAllocName(dpy, r->visual, r->cmap, text_color_pnd, &(r->color)))
+		die("Cannot allocate Xft color\n", EXIT_FAILURE);
+}
+
+static inline Display *
+get_display(void)
+{
 	Display *dpy = XOpenDisplay(NULL);
 	if (!dpy)
 		die("Cannot open X11 display\n", EXIT_FAILURE);
-	int scr = DefaultScreen(dpy);
-	Visual *visual = DefaultVisual(dpy, scr);
-	Colormap cmap = DefaultColormap(dpy, scr);
+	return dpy;
+}
 
-	XftColor color;
-	XGlyphInfo extents;
-	XftFont *font = XftFontOpenName(dpy, scr, fontname);
-	if (!font)
-		die("Cannot load font\n", EXIT_FAILURE);
-	if (!XftColorAllocName(dpy, visual, cmap, text_color_pnd, &color))
-		die("Cannot allocate Xft color\n", EXIT_FAILURE);
-	
-	int width = get_width(dpy, font, lines, length);
-	int height = length * (text_height * 2) + text_height;
+static void
+init_window(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a)
+{
+	w->width = get_width(dpy, r->font, a);
+	w->height = a->lines_len * (a->text_height * 2) + a->text_height;
 
-	int count_screens = ScreenCount(dpy);
+	//int count_screens = ScreenCount(dpy);
         Screen *screen = ScreenOfDisplay(dpy, 0);
-	int x = screen->width - width - x_offset;
+	w->x = screen->width - w->width - a->x_offset;
 
-	Window win = XCreateSimpleWindow(dpy, RootWindow(dpy, scr), x, y_offset, width, height, border, hex2int(border_color), hex2int(bg_color));
-	XSetWindowAttributes attributes;
-	attributes.override_redirect = True;
-	XChangeWindowAttributes(dpy, win, CWOverrideRedirect, &attributes);
-	XSelectInput(dpy, win, ExposureMask | KeyPressMask);
-	XMapWindow(dpy, win);
+	w->win = XCreateSimpleWindow(dpy, RootWindow(dpy, r->scr), w->x,
+					 a->y_offset, w->width, w->height, a->border_width,
+					 hex2int(a->border_color),
+					 hex2int(a->bg_color));
+	XSetWindowAttributes attributes = {
+        	.override_redirect = True
+	};
+	XChangeWindowAttributes(dpy, w->win, CWOverrideRedirect, &attributes);
+	XSelectInput(dpy, w->win, ExposureMask | KeyPressMask);
+	XMapWindow(dpy, w->win);
 
-	XftDraw *draw = XftDrawCreate(dpy, win, visual, cmap);
+	w->draw = XftDrawCreate(dpy, w->win, r->visual, r->cmap);
+}
 
-	write_text(dpy, win, draw, color, font, text_height, lines, length);
-
-	XftColorFree(dpy, visual, cmap, &color);
-	XftDrawDestroy(draw);
-	XDestroyWindow(dpy, win);
+static void
+cleanup(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a)
+{
+	XftColorFree(dpy, r->visual, r->cmap, &r->color);
+	XftDrawDestroy(w->draw);
+	XDestroyWindow(dpy, w->win);
 	XCloseDisplay(dpy);
+}
+
+static void
+draw(struct alert a)
+{
+	Display *dpy = get_display();
+
+	struct xrender r;
+	init_render(dpy, &r, &a);
+
+	struct xwin w;
+	init_window(dpy, &r, &w, &a);
+
+	write_text(dpy, w.win, w.draw, r.color, r.font, &a);
+
+	cleanup(dpy, &r, &w, &a);
 }
 
 int
 main(int argc, char **argv)
 {
-	int c, s = 3;
-	char text[BUFFER];
+	int c = 3;
 	extern char *optarg;
+
+	struct alert a = default_alert;
 
 	while ((c = getopt(argc, argv, "d:b:t:g:r:vh")) != -1 ) {
 		switch (c) {
@@ -186,26 +218,26 @@ main(int argc, char **argv)
 		case 'h':
 			help(argv[0]);
 		case 'd':
-			duration=atoi(optarg);
+			a.duration=atoi(optarg);
 			break;
 		case 'b':
-			border_width=atoi(optarg);
+			a.border_width=atoi(optarg);
 			break;
 		case 't':
-			strncpy(text_color, optarg, 7);
+			strncpy(a.text_color, optarg, 7);
 			break;
 		case 'g':
-			strncpy(bg_color, optarg, 7);
+			strncpy(a.bg_color, optarg, 7);
 			break;
 		case 'r':
-			strncpy(border_color, optarg, 7);
+			strncpy(a.border_color, optarg, 7);
 			break;
 		}
 	}
 
-	int lines_len=argc-optind;
-	char **lines = argv + optind; /* get lines to print */
-	draw(border_width, duration, lines, lines_len);
+	a.lines_len = argc - optind;
+	a.lines = argv + optind; /* get lines to print */
+	draw(a);
 
 	return 0;
 }

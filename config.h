@@ -5,24 +5,27 @@
  * config.h - configuration file
  */
 
-#define BUFFER 2054
+#include "sxalert.h"
 
-static int duration = 5000; /* in milliseconds */
+/* configure values below */
+static const struct alert default_alert = {
+	.duration 	= 5000, /* ms */
+	
+	/* default appearance */
+	
+	.text_color	= "dfe3e3",
+	.bg_color	= "1a1616",
+	.border_color	= "dfe3e3",
 
-/* default appearance */
+	.border_width	= 1,
+	.text_x_padding = 15,
 
-static char text_color[7]	= "dfe3e3";
-static char bg_color[7]		= "1a1616";
-static char border_color[7]	= "dfe3e3";
+	.min_width	= 300, 
+	.max_width	= 1000,
 
-static int border_width	= 1;
-static int text_x_padding = 15;
+	.x_offset	= 20, /* pixels from right */
+	.y_offset	= 40, /* pixels from top */
 
-static int min_width = 300; 
-static int max_width = 1000;
-
-static int x_offset = 20; /* pixels from right */
-static int y_offset = 40; /* pixels from top */
-
-const char *fontname = "DejaVu Sans Mono:size=13:antialias=true";
-static int text_height = 11;
+	.font		= "DejaVu Sans Mono:size=13:antialias=true",
+	.text_height 	= 11,
+};
