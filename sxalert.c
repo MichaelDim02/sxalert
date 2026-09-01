@@ -14,6 +14,7 @@
 #include <time.h>
 #include <poll.h>
 #include <X11/Xft/Xft.h>
+#include <X11/extensions/Xrandr.h>
 
 #include "config.h"
 
@@ -97,36 +98,73 @@ get_width(Display *dpy, XftFont *font, struct alert *a)
 	return width;
 }
 
+static int
+find_window(struct xwin *windows, int count, Window id)
+{
+	for (int i = 0; i < count; ++i) {
+		if (windows[i].win == id)
+			return i;
+	}
+
+	return -1;
+}
+
 static void
-write_text(Display *dpy, Window w, XftDraw *draw, XftColor color,
-	   XftFont *font, struct alert *a)
+write_text(Display *dpy, struct xwin *windows, int count,
+           XftColor color, XftFont *font, struct alert *a)
 {
 	while (1) {
-    		struct pollfd pfd = {
-        		.fd = ConnectionNumber(dpy),
-        		.events = POLLIN,
-    		};
-		int pending = XPending(dpy) > 0 || poll(&pfd, 1, a->duration) > 0;
+		struct pollfd pfd = {
+		        .fd = ConnectionNumber(dpy),
+		        .events = POLLIN,
+		};
+		
+		int pending = XPending(dpy) > 0 ||
+			      poll(&pfd, 1, a->duration) > 0;
 
 		if (!pending)
-			break;
-
+		        break;
+		
 		XEvent ev;
-		XSelectInput(dpy, w, ExposureMask | ButtonPressMask);
 		XNextEvent(dpy, &ev);
-
+		for (int i = 0; i < count; i++) {
+			XSelectInput(dpy, windows[i].win,
+			             ExposureMask | ButtonPressMask);
+		}
+	
+		int i = find_window( windows, count, ev.xany.window);
+		
+		if (i < 0)
+		        continue;
+		
 		if (ev.type == Expose) {
-		    	int spacing = a->text_height * 2;
-		    	for (int i = 0; i < a->lines_len; i++) {
-				if (a->lines_len != 0)
-		    			XftDrawStringUtf8(draw, &color, font, a->text_x_padding, spacing, (XftChar8 *)a->lines[i], strlen(a->lines[i]));
-		    		spacing += a->text_height * 2;
+			int spacing = a->text_height * 2;
+			
+			for (int line = 0; line < a->lines_len; ++line) {
+				XftDrawStringUtf8( windows[i].draw, &color,
+					font, a->text_x_padding, spacing,
+				        (XftChar8 *)a->lines[line],
+				        (int)strlen(a->lines[line])
+				);
+				
+				spacing += a->text_height * 2;
 			}
 		} else if (ev.type == ButtonPress) {
-			return;
+			switch (ev.xbutton.button) {
+			case Button1: /* left click */
+				exit(0);
+				break;
+			case Button2: /* middle click */
+				exit(1);
+				break;
+			case Button3: /* right click */
+				exit(3);
+				break;
+			}
 		}
 	}
 }
+
 
 static void
 init_render(Display *dpy, struct xrender *r, struct alert *a)
@@ -155,14 +193,19 @@ get_display(void)
 }
 
 static void
-init_window(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a)
+init_window(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a, 
+	    XRRMonitorInfo * monitor)
 {
 	w->width = get_width(dpy, r->font, a);
 	w->height = a->lines_len * (a->text_height * 2) + a->text_height;
 
 	//int count_screens = ScreenCount(dpy);
         Screen *screen = ScreenOfDisplay(dpy, 0);
-	w->x = screen->width - w->width - a->x_offset;
+	//w->x = screen->width - w->width - a->x_offset;
+	//w->x = screen->height - w->height 
+	w->x = monitor->x + monitor->width - w->width - a->x_offset;
+	w->y = monitor->y + a->y_offset;
+
 
 	w->win = XCreateSimpleWindow(dpy, RootWindow(dpy, r->scr), w->x,
 					 a->y_offset, w->width, w->height, a->border_width,
@@ -195,12 +238,32 @@ draw(struct alert a)
 	struct xrender r;
 	init_render(dpy, &r, &a);
 
-	struct xwin w;
-	init_window(dpy, &r, &w, &a);
+/**/
+	struct mon m;
+	m.monitor_count = 1;
+	m.monitors = XRRGetMonitors(dpy, RootWindow(dpy, r.scr), True, &m.monitor_count);
+	
+	/* Print monitor info */
+	
+	printf("Found %d monitors\n", m.monitor_count);
+	for (int i = 0; i < m.monitor_count; i++) {
+		printf("Monitor %d: x=%d y=%d width=%d height=%d primary=%d\n",
+	           i, m.monitors[i].x, m.monitors[i].y, m.monitors[i].width, m.monitors[i].height, m.monitors[i].primary);
+	}
+	
+	//Window *windows = calloc(m.monitor_count, sizeof(Window));
+	struct xwin *w = calloc(m.monitor_count, sizeof(struct xwin));
+	if (!w)
+		die("Cannot allocate window array\n", EXIT_FAILURE);
+/**/
+	for (int i = 0; i < m.monitor_count; i++) {
+		init_window(dpy, &r, &w[i], &a, &m.monitors[i]);
 
-	write_text(dpy, w.win, w.draw, r.color, r.font, &a);
+	}
 
-	cleanup(dpy, &r, &w, &a);
+	write_text(dpy, w, m.monitor_count, r.color, r.font, &a);
+
+	//cleanup(dpy, &r, &w, &a); /* TODO */
 }
 
 int

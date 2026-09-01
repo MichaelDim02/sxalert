@@ -36,8 +36,14 @@ struct xwin {
 	int width;
 	int height;
 	int x;
+	int y;
 	XftDraw *draw;
 	Window win;	
+};
+
+struct mon {
+	int monitor_count;
+	XRRMonitorInfo *monitors;
 };
 
 #endif
