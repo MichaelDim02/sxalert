@@ -51,16 +51,6 @@ hex2int(char *str)
 	return num;
 }
 
-static char *
-convert_text_color_code(struct alert *a) /* adds a '#' before the color hex, */
-{                             /* as XftColorAllocName requires it */
-	char* text_color_pnd = (char*)malloc(8);
-	strncpy(text_color_pnd+1, a->text_color, 6);
-	text_color_pnd[0] = '#';
-	text_color_pnd[7] = '\0';
-	return text_color_pnd;
-}
-
 int
 get_max(int arr[], int len)
 {
@@ -82,7 +72,10 @@ get_width(Display *dpy, XftFont *font, struct alert *a)
 		int width_lines[a->lines_len];
 		int j = 0;
 		for (int i = 0; i < a->lines_len; i++) {
-			XftTextExtentsUtf8(dpy, font, (XftChar8*)a->lines[i], strlen(a->lines[i]), &ext);
+			XftTextExtentsUtf8(dpy, font,
+				           (XftChar8*)a->lines[i],
+					   strlen(a->lines[i]),
+					   &ext);
     			width_lines[i] = ext.xOff;
 			j++;
 		}
@@ -127,12 +120,8 @@ write_text(Display *dpy, struct xwin *windows, int count,
 		
 		XEvent ev;
 		XNextEvent(dpy, &ev);
-		for (int i = 0; i < count; i++) {
-			XSelectInput(dpy, windows[i].win,
-			             ExposureMask | ButtonPressMask);
-		}
 	
-		int i = find_window( windows, count, ev.xany.window);
+		int i = find_window(windows, count, ev.xany.window);
 		
 		if (i < 0)
 		        continue;
@@ -141,7 +130,7 @@ write_text(Display *dpy, struct xwin *windows, int count,
 			int spacing = a->text_height * 2;
 			
 			for (int line = 0; line < a->lines_len; ++line) {
-				XftDrawStringUtf8( windows[i].draw, &color,
+				XftDrawStringUtf8(windows[i].draw, &color,
 					font, a->text_x_padding, spacing,
 				        (XftChar8 *)a->lines[line],
 				        (int)strlen(a->lines[line])
@@ -158,7 +147,7 @@ write_text(Display *dpy, struct xwin *windows, int count,
 				exit(1);
 				break;
 			case Button3: /* right click */
-				exit(3);
+				exit(2);
 				break;
 			}
 		}
@@ -170,7 +159,7 @@ static void
 init_render(Display *dpy, struct xrender *r, struct alert *a)
 {
 	char text_color_pnd[8];
-	strncpy(text_color_pnd, convert_text_color_code(a), 8);
+	snprintf(text_color_pnd, 8, "#%s", a->text_color);
 
 	r->scr = DefaultScreen(dpy);
 	r->visual = DefaultVisual(dpy, r->scr);
@@ -178,47 +167,40 @@ init_render(Display *dpy, struct xrender *r, struct alert *a)
 
 	r->font = XftFontOpenName(dpy, r->scr, a->font);
 	if (!r->font)
-		die("Cannot load font\n", EXIT_FAILURE);
-	if (!XftColorAllocName(dpy, r->visual, r->cmap, text_color_pnd, &(r->color)))
-		die("Cannot allocate Xft color\n", EXIT_FAILURE);
-}
-
-static inline Display *
-get_display(void)
-{
-	Display *dpy = XOpenDisplay(NULL);
-	if (!dpy)
-		die("Cannot open X11 display\n", EXIT_FAILURE);
-	return dpy;
+		die("Cannot load font\n", -1);
+	if (!XftColorAllocName(dpy, r->visual, r->cmap,
+			       text_color_pnd, &(r->color)))
+		die("Cannot allocate Xft color\n", -1);
 }
 
 static void
-init_window(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a, 
-	    XRRMonitorInfo * monitor)
+init_window(Display *dpy, struct xrender *r, struct xwin *w,
+	    struct alert *a, XRRMonitorInfo * monitor)
 {
 	w->width = get_width(dpy, r->font, a);
-	w->height = a->lines_len * (a->text_height * 2) + a->text_height;
+	w->height = a->lines_len * (a->text_height * 2)
+		    + a->text_height;
 
-	//int count_screens = ScreenCount(dpy);
         Screen *screen = ScreenOfDisplay(dpy, 0);
-	//w->x = screen->width - w->width - a->x_offset;
-	//w->x = screen->height - w->height 
 	w->x = monitor->x + monitor->width - w->width - a->x_offset;
 	w->y = monitor->y + a->y_offset;
 
 
 	w->win = XCreateSimpleWindow(dpy, RootWindow(dpy, r->scr), w->x,
-					 a->y_offset, w->width, w->height, a->border_width,
+					 a->y_offset, w->width, w->height,
+					 a->border_width,
 					 hex2int(a->border_color),
 					 hex2int(a->bg_color));
-	XSetWindowAttributes attributes = {
+	XSetWindowAttributes attr = {
         	.override_redirect = True
 	};
-	XChangeWindowAttributes(dpy, w->win, CWOverrideRedirect, &attributes);
+	XChangeWindowAttributes(dpy, w->win, CWOverrideRedirect, &attr);
 	XSelectInput(dpy, w->win, ExposureMask | KeyPressMask);
 	XMapWindow(dpy, w->win);
 
 	w->draw = XftDrawCreate(dpy, w->win, r->visual, r->cmap);
+
+	XSelectInput(dpy, w->win, ExposureMask | ButtonPressMask);
 }
 
 static void
@@ -233,29 +215,31 @@ cleanup(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a)
 static void
 draw(struct alert a)
 {
-	Display *dpy = get_display();
+	Display *dpy = XOpenDisplay(NULL);
+	if (!dpy)
+		die("Cannot open X11 display\n", -1);
 
 	struct xrender r;
 	init_render(dpy, &r, &a);
 
-/**/
 	struct mon m;
 	m.monitor_count = 1;
-	m.monitors = XRRGetMonitors(dpy, RootWindow(dpy, r.scr), True, &m.monitor_count);
+	m.monitors = XRRGetMonitors(dpy, RootWindow(dpy, r.scr),
+				    True, &m.monitor_count);
 	
-	/* Print monitor info */
-	
+	/* for debugging 
 	printf("Found %d monitors\n", m.monitor_count);
 	for (int i = 0; i < m.monitor_count; i++) {
-		printf("Monitor %d: x=%d y=%d width=%d height=%d primary=%d\n",
-	           i, m.monitors[i].x, m.monitors[i].y, m.monitors[i].width, m.monitors[i].height, m.monitors[i].primary);
-	}
+		printf("Monitor %d: x=%d y=%d width=%d height=%d "
+		      "primary=%d\n", i, m.monitors[i].x, m.monitors[i].y,
+		      m.monitors[i].width, m.monitors[i].height,
+		      m.monitors[i].primary);
+	} */
 	
-	//Window *windows = calloc(m.monitor_count, sizeof(Window));
 	struct xwin *w = calloc(m.monitor_count, sizeof(struct xwin));
 	if (!w)
-		die("Cannot allocate window array\n", EXIT_FAILURE);
-/**/
+		die("Cannot allocate window array\n", -1);
+
 	for (int i = 0; i < m.monitor_count; i++) {
 		init_window(dpy, &r, &w[i], &a, &m.monitors[i]);
 
@@ -282,6 +266,9 @@ main(int argc, char **argv)
 			help(argv[0]);
 		case 'd':
 			a.duration=atoi(optarg);
+			if (a.duration == 0) {
+				a.duration = -1;
+			}
 			break;
 		case 'b':
 			a.border_width=atoi(optarg);
@@ -302,5 +289,5 @@ main(int argc, char **argv)
 	a.lines = argv + optind; /* get lines to print */
 	draw(a);
 
-	return 0;
+	return 4;
 }

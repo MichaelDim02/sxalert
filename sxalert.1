@@ -1,6 +1,6 @@
 .\" Manpage for sxalert
 
-.TH man 8 "11 Nov 2023" "0.1" "sxalert manual page"
+.TH man 8 "19 Sept 2026" "0.2" "sxalert manual page"
 .SH NAME
 sxalert \- Simple X Alert
 .SH SYNOPSIS
@@ -19,10 +19,17 @@ sxalert will draw text as a notification for X
 -b border width in pixels
 
 -d duration in milliseconds
+   for values below or equal to 0 the notification will run indefinitely
 
 -h print help panel & exit
 
 -v print version & exit
+
+.SH EXIT CODES
+0 - Left click on the notification window
+1 - Midde click on the notification window
+2 - Right click on the notification window
+3 - Time out
 
 .SH EXAMPLES
 
@@ -30,14 +37,20 @@ This will print the string "Updates available":
 
 sxalert "Updates avalailable"
 
-The following will also print "Updates available" but will specify text color to be red, background to be black and border width to be 0:
+The following will also print "Updates available" but will specify text
+color to be red, background to be black and border width to be 0:
 
 sxlaert -t 0xff0000 -g 0x000000 -b 0 "Updates available"
 
 These will overwrite the defaults specified in config.h
 
+The following will print "New mail" and echo "OK" to stdout if the user
+left clicks on the notification window:
+
+sxalert "New mail" && echo "OK"
+
 .SH AUTHOR
-Michael Constantine Dimopoulos <mk@mcdim.xyz>
+Michail Konstantinos Dimopoulos <mk@mcdim.xyz>
 
 https://mcdim.xyz
 

@@ -27,5 +27,5 @@ static const struct alert default_alert = {
 	.y_offset	= 40, /* pixels from top */
 
 	.font		= "DejaVu Sans Mono:size=13:antialias=true",
-	.text_height 	= 11,
+	.text_height 	= 10,
 };
