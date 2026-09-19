@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#define VERSION "v0.1"
+#define VERSION "v0.2"
 
 static inline void
 die(const char *msg, int code)
@@ -35,7 +35,8 @@ help(char *bin)
 	       "	-g background hex color\n"
 	       "	-r border hex color\n"
 	       "	-b border width in pixels\n"
-	       "	-d duration in milliseconds\n\n"
+	       "	-d duration in milliseconds\n"
+	       "	-s read from stdin\n\n"
 	       "	-v print version & exit\n"
 	       "	-h print help panel & exit\n\n"
 	       "Usage: %s [arguments] \"text\" \"text\" \"text\"\n",
@@ -204,15 +205,6 @@ init_window(Display *dpy, struct xrender *r, struct xwin *w,
 }
 
 static void
-cleanup(Display *dpy, struct xrender *r, struct xwin *w, struct alert *a)
-{
-	XftColorFree(dpy, r->visual, r->cmap, &r->color);
-	XftDrawDestroy(w->draw);
-	XDestroyWindow(dpy, w->win);
-	XCloseDisplay(dpy);
-}
-
-static void
 draw(struct alert a)
 {
 	Display *dpy = XOpenDisplay(NULL);
@@ -227,15 +219,6 @@ draw(struct alert a)
 	m.monitors = XRRGetMonitors(dpy, RootWindow(dpy, r.scr),
 				    True, &m.monitor_count);
 	
-	/* for debugging 
-	printf("Found %d monitors\n", m.monitor_count);
-	for (int i = 0; i < m.monitor_count; i++) {
-		printf("Monitor %d: x=%d y=%d width=%d height=%d "
-		      "primary=%d\n", i, m.monitors[i].x, m.monitors[i].y,
-		      m.monitors[i].width, m.monitors[i].height,
-		      m.monitors[i].primary);
-	} */
-	
 	struct xwin *w = calloc(m.monitor_count, sizeof(struct xwin));
 	if (!w)
 		die("Cannot allocate window array\n", -1);
@@ -246,9 +229,33 @@ draw(struct alert a)
 	}
 
 	write_text(dpy, w, m.monitor_count, r.color, r.font, &a);
-
-	//cleanup(dpy, &r, &w, &a); /* TODO */
 }
+
+void
+read_stdin(struct alert *a, FILE *f)
+{
+	int buffer = 264;
+	char *p = malloc(buffer);
+
+	int i = 0;
+	while (fgets(p, buffer, f) != NULL) {
+		for (int j=0; j<264; j++) {
+			if (p[j] == '\n')
+				p[j] = '\0';
+		}
+
+		a->lines = realloc(a->lines, (i + 1)*sizeof(*a->lines));
+		if (a->lines == NULL) {
+			die("Cannot allocate memory\n", -1);
+		}
+		a->lines[i] = calloc(buffer, 1);
+		strncpy(a->lines[i], p, buffer);
+		i++;
+	}
+	a->lines_len = i;
+	free(p);
+}
+
 
 int
 main(int argc, char **argv)
@@ -258,7 +265,8 @@ main(int argc, char **argv)
 
 	struct alert a = default_alert;
 
-	while ((c = getopt(argc, argv, "d:b:t:g:r:vh")) != -1 ) {
+	int s = 0;
+	while ((c = getopt(argc, argv, "d:b:t:g:r:svh")) != -1 ) {
 		switch (c) {
 		case 'v':
 			die(VERSION, EXIT_SUCCESS);
@@ -266,9 +274,8 @@ main(int argc, char **argv)
 			help(argv[0]);
 		case 'd':
 			a.duration=atoi(optarg);
-			if (a.duration == 0) {
+			if (a.duration == 0)
 				a.duration = -1;
-			}
 			break;
 		case 'b':
 			a.border_width=atoi(optarg);
@@ -282,11 +289,37 @@ main(int argc, char **argv)
 		case 'r':
 			strncpy(a.border_color, optarg, 7);
 			break;
+		case 's':
+			s = 1;
+			break;
 		}
 	}
 
-	a.lines_len = argc - optind;
-	a.lines = argv + optind; /* get lines to print */
+	int cmd_lines_len = argc - optind;
+	char **lines = argv + optind;
+
+	if (!s) {
+		a.lines = lines;
+		a.lines_len = cmd_lines_len;
+		draw(a);
+		return 4;
+	}
+
+	FILE *f = tmpfile();
+	int cc;
+	
+	while ((cc = getchar()) != EOF)
+	    fputc(cc, f);
+	
+	for (int i=0; i<cmd_lines_len; i++)
+		fprintf(f, "%s\n", lines[i]);
+		//fputs(lines[i], f);
+	
+	a.lines = NULL;
+	a.lines_len = 0;
+	rewind(f);
+	read_stdin(&a, f);
+
 	draw(a);
 
 	return 4;

@@ -52,7 +52,7 @@ And to install on /bin:
 
 Usage
 -----
-You can simply run the tool with each argument being a line of text
+You can simply run the tool with each argument being a line of text"
 
 	$ sxalert "First line" "Second line"
 
@@ -61,6 +61,14 @@ You can also set color, border width & duration:
 	$ sxalert -d 1000 -b 5 -t FFFFFF -g 000000 -r FFFFFF "Hello world!"
 
 These will overwrite the defaults defined in `config.h`
+
+sxalert can read from standard input:
+
+	$ sxalert < banner.txt
+
+	$ { printf '%s\n' '===== BUILD FAILED ====='; \
+	    tail -n 20 build.log; } \
+	  | ./sxalert -s
 
 Return values
 -------------
@@ -74,11 +82,11 @@ Yes, this does mean that sxalert returns non-zero values even with normal
 execution, but for a good reason.  This makes sxalert excellent for shell
 scripts. For example:
 
-You can set your mail to read with an acknowledgment
+You can set your mail to read with an acknowledgment:
 
 	$ sxalert "New Mail" && mail-set-to-read
 
-Or you can create a more elaborate interaction
+Or you can create a more elaborate interaction:
 
 	sxalert "New Mail: X" "Left click to set to read" \
 		"Middle click to delete" \
@@ -95,6 +103,7 @@ Or you can create a more elaborate interaction
 	2)
 		echo "Unread mail"
 		;;
+	esac
 
 Optional D-Bus daemon hack
 --------------------------
