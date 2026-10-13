@@ -1,8 +1,7 @@
-/* Simple X Alert v0.1
- * Simple notification program for X
- * GNU GPL v3.0+
+/* sxalert - simple notification program for X
  *
- * sxalert.c - main program
+ * Copyright (C) 2026 Michail Konstantinos Dimopoulos
+ * License: GPL-3.0-or-later (see LICENSE)
  */
 
 #include <stdlib.h>
@@ -18,7 +17,7 @@
 
 #include "config.h"
 
-#define VERSION "v0.2"
+#define VERSION "v1.0"
 
 static inline void
 die(const char *msg, int code)

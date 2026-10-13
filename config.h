@@ -1,8 +1,7 @@
-/* Simple X Alert v0.1
- * Simple notification program for X
- * GNU GPL v3.0
+/* sxalert - simple notification program for X
  *
- * config.h - configuration file
+ * Copyright (C) 2026 Michail Konstantinos Dimopoulos
+ * License: GPL-3.0-or-later (see LICENSE)
  */
 
 #include "sxalert.h"

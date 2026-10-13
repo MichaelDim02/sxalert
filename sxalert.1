@@ -1,60 +1,157 @@
 .\" Manpage for sxalert
 
-.TH man 8 "19 Sept 2026" "0.2" "sxalert manual page"
+.TH man 1 "13 Oct 2026" "1.0" "sxalert manual page"
 .SH NAME
 sxalert \- Simple X Alert
+
 .SH SYNOPSIS
-sxalert [OPTIONS] "First line" "Second line" "Third line"
+.B sxalert
+.RB [ \-s ]
+.RB [ \-t
+.IR color ]
+.RB [ \-g
+.IR color ]
+.RB [ \-r
+.IR color ]
+.RB [ \-b
+.IR width ]
+.RB [ \-d
+.IR duration ]
+.RI [ line " ...]"
+.br
+.B sxalert \-v
+.br
+.B sxalert \-h
+
 .SH DESCRIPTION
-sxalert will draw text as a notification for X
+.B sxalert
+displays text notifications for X. It accepts standard input,
+command-line arguments, or both, appending the latter to the former.
+Mouse interactions produce distinct exit statuses, allowing sxalert
+to be used in shell scripts. It allows for runtime visual
+customizability through command-line arguments.
 
 .SH OPTIONS
 
--t text color in hex
+.TP
+.B -s
+Read from stdin. Command line arguments will be appended.
 
--g background color in hex
+.TP
+.BI "-t " color
+Set the text color in hexadecimal. Six consecutive digits without prefix.
 
--r border color in hex
+.TP
+.BI "-g " color
+Set the background color.
 
--b border width in pixels
+.TP
+.BI "-r " color
+Set the border color.
 
--d duration in milliseconds
-   for values below or equal to 0 the notification will run indefinitely
+.TP
+.BI "-b " width
+Set the border width in pixels.
 
--s read from stdin (command line arguments will be appended)
+.TP
+.BI "-d " duration
+Set the duration in milliseconds. Will run indefinitely for values less than, or equal to, zero.
 
--h print help panel & exit
+.TP
+.B -h
+Print help panel & exit.
 
--v print version & exit
+.TP
+.B -v
+Print version & exit.
 
 .SH EXIT CODES
-0 - Left click on the notification window
-1 - Midde click on the notification window
-2 - Right click on the notification window
-3 - Time out
+
+.TP
+.B 0
+Left click on the notification window.
+
+.TP
+.B 1
+Midde click on the notification window.
+
+.TP
+.B 2
+Right click on the notification window.
+
+.TP
+.B 3
+Time out.
 
 .SH EXAMPLES
 
-This will print the string "Updates available":
-
+Display a simple notification:
+.PP
+.RS
+.nf
 sxalert "Updates avalailable"
+.fi
+.RE
 
-The following will also print "Updates available" but will specify text
-color to be red, background to be black and border width to be 0:
+Display a notification with red text, black background, no border:
+.PP
+.RS
+.nf
+sxalert -t 0xff0000 -g 0x000000 -b 0 "Updates available"
+.fi
+.RE
 
-sxlaert -t 0xff0000 -g 0x000000 -b 0 "Updates available"
+These options override the defaults in config.h.
+.PP
 
-These will overwrite the defaults specified in config.h
+Confirmation dialoge with a right click, dismissed otherwise:
+.PP
+.RS
+.nf
+sxalert "Proceed with backup?" && backup.sh
+.fi
+.RE
 
-The following will print "New mail" and echo "OK" to stdout if the user
-left clicks on the notification window:
+Launch neomutt in st when the notification is accepted; otherwise display "Ignored":
+.PP
+.RS
+.nf
+sxalert "New mail!" && nohup st -e neomutt || sxalert "Ignored"
+.fi
+.RE
 
-sxalert "New mail" && echo "OK"
+Display a preformatted text file:
+.PP
+.RS
+.nf
+sxalert -s < banner.txt
+.fi
+.RE
 
-.SH AUTHOR
+Display stdin and append a timestamp:
+.PP
+.RS
+.nf
+make test | tail | sxalert -s "$(date)"
+.fi
+.RE
+
+.SH COLOPHON 
+.TP
+.B Author
 Michail Konstantinos Dimopoulos <mk@mcdim.xyz>
+.TP
+.B Copyright
+\(co 2023,2026 Michail Konstantinos Dimopoulos
+.TP
+.B License
+GNU General Public License 3.0 or later (GPL-3.0-or-later)
 
-https://mcdim.xyz
+.TP
+.B Patches
+Send patches to <hackers@mcdim.xyz>
 
-.SH LICENSE
-GNU General Public License 3.0 (GPL-3.0)
+.SH SEE ALSO
+.BR herbe (1),
+.BR xmessage (1),
+.BR notify-send (1)

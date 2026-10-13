@@ -1,3 +1,9 @@
+/* sxalert - simple notification program for X
+ *
+ * Copyright (C) 2026 Michail Konstantinos Dimopoulos
+ * License: GPL-3.0-or-later (see LICENSE)
+ */
+
 #ifndef SXALERT_H
 #define SXALERT_H
 
