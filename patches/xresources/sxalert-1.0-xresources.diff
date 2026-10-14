@@ -1,29 +1,20 @@
---- ../sxalert_simplification_attempt/config.h	2026-09-19 00:57:10.187027307 +0300
-+++ config.h	2026-09-19 01:23:35.202912393 +0300
-@@ -29,3 +29,5 @@
+diff -ruN old/config.h new/config.h
+--- old/config.h	2026-10-15 02:27:36.895141358 +0300
++++ new/config.h	2026-10-15 02:22:29.877680526 +0300
+@@ -28,3 +28,5 @@
  	.font		= "DejaVu Sans Mono:size=13:antialias=true",
  	.text_height 	= 10,
  };
 +
 +const char *xresources = "/home/michael/.cache/wal/colors.Xresources"; /* wal */
---- ../sxalert_simplification_attempt/sxalert.h	2026-09-01 15:36:58.132156170 +0300
-+++ sxalert.h	2026-09-19 01:23:11.668554392 +0300
-@@ -1,6 +1,8 @@
- #ifndef SXALERT_H
- #define SXALERT_H
- 
-+#define XR_BUFFER 128
-+
- struct alert {
- 	int duration;
- 	char text_color[7];
---- ../sxalert_simplification_attempt/sxalert.c	2026-09-19 00:59:47.056450915 +0300
-+++ sxalert.c	2026-09-19 01:19:07.926615607 +0300
-@@ -63,6 +63,40 @@
+diff -ruN old/sxalert.c new/sxalert.c
+--- old/sxalert.c	2026-10-15 02:27:29.337141729 +0300
++++ new/sxalert.c	2026-10-15 02:24:51.835149470 +0300
+@@ -66,6 +66,40 @@
  	return max;
  }
  
-+void
++static void
 +get_xresources_colors(struct alert *a)
 +{
 +	FILE *f = fopen(xresources, "r");
@@ -60,12 +51,24 @@
  static int
  get_width(Display *dpy, XftFont *font, struct alert *a)
  {
-@@ -258,6 +292,8 @@
- 
- 	struct alert a = default_alert;
+@@ -301,6 +335,8 @@
+ 	if (flock(fd, LOCK_EX) == -1)
+ 		return 1;
  
 +	get_xresources_colors(&a);
 +
- 	while ((c = getopt(argc, argv, "d:b:t:g:r:vh")) != -1 ) {
- 		switch (c) {
- 		case 'v':
+ 	int cmd_lines_len = argc - optind;
+ 	char **lines = argv + optind;
+ 
+diff -ruN old/sxalert.h new/sxalert.h
+--- old/sxalert.h	2026-10-15 02:27:32.357141581 +0300
++++ new/sxalert.h	2026-10-15 02:22:29.877893651 +0300
+@@ -7,6 +7,8 @@
+ #ifndef SXALERT_H
+ #define SXALERT_H
+ 
++#define XR_BUFFER 128
++
+ struct alert {
+ 	int duration;
+ 	char text_color[7];

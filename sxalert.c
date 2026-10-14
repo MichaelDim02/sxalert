@@ -1,6 +1,6 @@
 /* sxalert - simple notification program for X
  *
- * Copyright (C) 2026 Michail Konstantinos Dimopoulos
+ * Copyright (C) 2023, 2026 Michail Konstantinos Dimopoulos
  * License: GPL-3.0-or-later (see LICENSE)
  */
 
@@ -14,6 +14,7 @@
 #include <poll.h>
 #include <X11/Xft/Xft.h>
 #include <X11/extensions/Xrandr.h>
+#include <sys/file.h>
 
 #include "config.h"
 
@@ -29,17 +30,19 @@ die(const char *msg, int code)
 static inline void
 help(char *bin)
 {
-	printf("sxalert %s - Alert utility for X\n\n"
-	       "	-t text hex color (eg FFFFFF)\n"
-	       "	-g background hex color\n"
-	       "	-r border hex color\n"
-	       "	-b border width in pixels\n"
-	       "	-d duration in milliseconds\n"
-	       "	-s read from stdin\n\n"
-	       "	-v print version & exit\n"
-	       "	-h print help panel & exit\n\n"
-	       "Usage: %s [arguments] \"text\" \"text\" \"text\"\n",
-	       VERSION, bin);
+	printf("sxalert %s - simple alert utility for X\n\n"
+	       "Options:\n"
+	       " -t color       Set text color (hexadecimal, e.g., FFFFFF)\n"
+	       " -g color       Set background hex color\n"
+	       " -r color       Set border color\n"
+	       " -b width       Set border width in pixels\n"
+	       " -d duration    Set duration in milliseconds\n"
+	       " -s		Read from standard input\n"
+	       " -v             Print version and exit\n"
+	       " -h             Print help and exit\n\n"
+	       "Usage: %s [-s] [-t color] [-g color] [-r color]\n"
+	       "       %*s [-b width] [-d duration] [line ...]\n",
+	       VERSION, bin, (int)strlen(bin), "");
 	exit(0);
 }
 
@@ -292,6 +295,12 @@ main(int argc, char **argv)
 		}
 	}
 
+	int fd = open("/tmp/sxalert.lock", O_CREAT | O_RDWR, 0600);
+	if (fd == -1)
+		return 1;
+	if (flock(fd, LOCK_EX) == -1)
+		return 1;
+
 	int cmd_lines_len = argc - optind;
 	char **lines = argv + optind;
 
@@ -299,7 +308,7 @@ main(int argc, char **argv)
 		a.lines = lines;
 		a.lines_len = cmd_lines_len;
 		draw(a);
-		return 4;
+		return 3;
 	}
 
 	FILE *f = tmpfile();

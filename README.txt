@@ -25,7 +25,7 @@
 Simple X Alert 
 ==============
 
-Simple alert pop-up utility for X.
+Simple alert utility for X.
 
 Features
 --------
@@ -34,25 +34,28 @@ Features
 + UTF-8 support
 + Configurable & scriptable with shell
 + Dynamic screen positioning & sizing
++ Runtime color customization
++ Multi-monitor support
++ Concurrent notifications serialization
 
 Dependencies
 ------------
-A c99 compiler, make, Xlib and Xft.
+A c99 compiler, make, libc, Xlib and Xft.
 
 Build & install
 ---------------
-In order to build, execute the following commands:
+To build:
 
 	$ git clone git://mcdim.xyz/sxalert.git && cd sxalert
 	$ make sxalert
 
-And to install on /bin:
+To install:
 
 	$ sudo make install
 
 Usage
 -----
-You can simply run the tool with each argument being a line of text"
+You can simply run the tool with each argument representing a line of text:
 
 	$ sxalert "First line" "Second line"
 
@@ -60,11 +63,11 @@ You can also set color, border width & duration:
 
 	$ sxalert -d 1000 -b 5 -t FFFFFF -g 000000 -r FFFFFF "Hello world!"
 
-These will overwrite the defaults defined in `config.h`
+These will override the defaults defined in `config.h`
 
 sxalert can read from standard input:
 
-	$ sxalert < banner.txt
+	$ sxalert -s < banner.txt
 
 	$ { printf '%s\n' '===== BUILD FAILED ====='; \
 	    tail -n 20 build.log; } \
@@ -74,7 +77,7 @@ Return values
 -------------
 sxalert returns:
 0  - Left click on the notification window
-1  - Midde click on the notification window
+1  - Middle click on the notification window
 2  - Right click on the notification window
 3  - Time out
 
@@ -109,9 +112,16 @@ Optional D-Bus daemon hack
 --------------------------
 I've created a small Shell script called sxalertd that can run as a pseudo
 daemon that intercepts D-Bus and uses sxalert to draw the notifications.
-It's not a proper daemon, and does not own the process, but can work fine.
-method are a little hacky but work quite well.
-(https://github.com/MichaelDim02/sxalertd) 
+A little hacky but works well enough.
+(https://mcdim.xyz/git/sxalertd/log.html) 
+
+Colophon
+--------
+Author: Michail Konstantinos Dimopoulos
+Copyright (C) 2023, 2026 Michail Konstantinos Dimopoulos
+License: GNU General Public License 3.0 or later (GPL-3.0-or-later)
+         See LICENSE for more information
+Patches: <hackers@mcdim.xyz>
 
 Credit
 ------

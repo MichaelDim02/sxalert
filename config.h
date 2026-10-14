@@ -1,6 +1,6 @@
 /* sxalert - simple notification program for X
  *
- * Copyright (C) 2026 Michail Konstantinos Dimopoulos
+ * Copyright (C) 2023, 2026 Michail Konstantinos Dimopoulos
  * License: GPL-3.0-or-later (see LICENSE)
  */
 

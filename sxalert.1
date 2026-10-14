@@ -1,6 +1,6 @@
 .\" Manpage for sxalert
 
-.TH man 1 "13 Oct 2026" "1.0" "sxalert manual page"
+.TH man 1 "15 Oct 2026" "1.0" "sxalert manual page"
 .SH NAME
 sxalert \- Simple X Alert
 
@@ -30,6 +30,7 @@ command-line arguments, or both, appending the latter to the former.
 Mouse interactions produce distinct exit statuses, allowing sxalert
 to be used in shell scripts. It allows for runtime visual
 customizability through command-line arguments.
+Concurrent notifications are serialized using an advisory file lock.
 
 .SH OPTIONS
 
