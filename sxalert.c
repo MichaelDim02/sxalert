@@ -43,15 +43,15 @@ help(char *bin)
 	exit(0);
 }
 
-static int
+static unsigned int
 hex2int(char *str)
 {
-	int num;
+	unsigned int num;
 	sscanf(str, "%x", &num);
 	return num;
 }
 
-int
+static int
 get_max(int arr[], int len)
 {
 	int max = -1;
@@ -70,14 +70,12 @@ get_width(Display *dpy, XftFont *font, struct alert *a)
 	int width = 0;
 	if (a->lines_len > 0) {
 		int width_lines[a->lines_len];
-		int j = 0;
 		for (int i = 0; i < a->lines_len; i++) {
 			XftTextExtentsUtf8(dpy, font,
 				           (XftChar8*)a->lines[i],
-					   strlen(a->lines[i]),
+					   (int)strlen(a->lines[i]),
 					   &ext);
     			width_lines[i] = ext.xOff;
-			j++;
 		}
 
 		int text_width = get_max(width_lines, a->lines_len);
@@ -178,19 +176,17 @@ init_window(Display *dpy, struct xrender *r, struct xwin *w,
 	    struct alert *a, XRRMonitorInfo * monitor)
 {
 	w->width = get_width(dpy, r->font, a);
-	w->height = a->lines_len * (a->text_height * 2)
-		    + a->text_height;
+	w->height = a->lines_len * (a->text_height * 2) + a->text_height;
 
-        Screen *screen = ScreenOfDisplay(dpy, 0);
 	w->x = monitor->x + monitor->width - w->width - a->x_offset;
 	w->y = monitor->y + a->y_offset;
 
-
 	w->win = XCreateSimpleWindow(dpy, RootWindow(dpy, r->scr), w->x,
-					 a->y_offset, w->width, w->height,
-					 a->border_width,
-					 hex2int(a->border_color),
-					 hex2int(a->bg_color));
+				     a->y_offset, (unsigned int)w->width,
+				     (unsigned int)w->height,
+				     (unsigned int)a->border_width,
+				     hex2int(a->border_color),
+				     hex2int(a->bg_color));
 	XSetWindowAttributes attr = {
         	.override_redirect = True
 	};
@@ -218,32 +214,32 @@ draw(struct alert a)
 	m.monitors = XRRGetMonitors(dpy, RootWindow(dpy, r.scr),
 				    True, &m.monitor_count);
 	
-	struct xwin *w = calloc(m.monitor_count, sizeof(struct xwin));
+	struct xwin *w = calloc((size_t)m.monitor_count,
+                                sizeof(struct xwin));
 	if (!w)
 		die("Cannot allocate window array\n", -1);
 
-	for (int i = 0; i < m.monitor_count; i++) {
+	for (int i = 0; i < m.monitor_count; i++)
 		init_window(dpy, &r, &w[i], &a, &m.monitors[i]);
-
-	}
 
 	write_text(dpy, w, m.monitor_count, r.color, r.font, &a);
 }
 
-void
+static void
 read_stdin(struct alert *a, FILE *f)
 {
-	int buffer = 264;
+	size_t buffer = 264;
 	char *p = malloc(buffer);
 
 	int i = 0;
-	while (fgets(p, buffer, f) != NULL) {
+	while (fgets(p, (int)buffer, f) != NULL) {
 		for (int j=0; j<264; j++) {
 			if (p[j] == '\n')
 				p[j] = '\0';
 		}
 
-		a->lines = realloc(a->lines, (i + 1)*sizeof(*a->lines));
+		a->lines = realloc(a->lines,
+				   (size_t)(i + 1)*sizeof(*a->lines));
 		if (a->lines == NULL) {
 			die("Cannot allocate memory\n", -1);
 		}
@@ -269,8 +265,10 @@ main(int argc, char **argv)
 		switch (c) {
 		case 'v':
 			die(VERSION, EXIT_SUCCESS);
+			break;
 		case 'h':
 			help(argv[0]);
+			break;
 		case 'd':
 			a.duration=atoi(optarg);
 			if (a.duration == 0)
